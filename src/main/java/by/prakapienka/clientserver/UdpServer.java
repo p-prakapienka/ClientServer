@@ -9,7 +9,7 @@ import java.util.Calendar;
 import java.util.Date;
 
 
-public class UdpServer extends Thread {
+public class UdpServer {
 
     private static final String HANDSHAKE = "handshake";
     private static final String AVAILABLE_COMMANDS = "1. Say Hello. 2. Server Date. 3. My Address. 0. Exit.";
@@ -19,7 +19,6 @@ public class UdpServer extends Thread {
     private DatagramSocket socket;
     private InetAddress address;
 
-    @Override
     public void run() {
         try {
             socket = new DatagramSocket(port);
@@ -64,6 +63,7 @@ public class UdpServer extends Thread {
             try {
                 if (socket != null) {
                     socket.close();
+                    socket = null;
                 }
             } catch (Exception e) {
                 System.out.println(e.getMessage());

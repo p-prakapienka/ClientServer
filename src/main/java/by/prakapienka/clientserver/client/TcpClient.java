@@ -49,12 +49,15 @@ public class TcpClient {
             try {
                 if (in != null) {
                     in.close();
+                    in = null;
                 }
                 if (out != null) {
                     out.close();
+                    out = null;
                 }
                 if (socket != null) {
                     socket.close();
+                    socket = null;
                 }
             } catch (IOException e) {
                 System.out.println(e.getMessage());

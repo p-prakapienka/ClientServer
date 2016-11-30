@@ -63,6 +63,7 @@ public class UdpClient {
         } finally {
             if (socket != null) {
                 socket.close();
+                socket = null;
             }
         }
     }
