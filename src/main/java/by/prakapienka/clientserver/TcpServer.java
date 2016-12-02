@@ -12,6 +12,8 @@ import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class TcpServer {
 
@@ -22,9 +24,10 @@ public class TcpServer {
     private static final String AVAILABLE_COMMANDS = "1. Say Hello. 2. Server Date. 3. My Address. 0. Exit.";
 
     private final int port;
+    private final ExecutorService executor;
     private ServerSocket serverSocket;
 
-    private class Handler extends Thread {
+    private class Handler implements Runnable {
 
         private Socket socket;
         private PrintWriter out;
@@ -120,7 +123,7 @@ public class TcpServer {
             while (true) {
                 Socket socket = serverSocket.accept();
                 if (socket != null) {
-                    new Handler(socket).start();
+                    executor.execute(new Handler(socket));
                     LOG.info("Establishing connection with {}.",
                             socket.getRemoteSocketAddress());
                     continue;
@@ -136,6 +139,7 @@ public class TcpServer {
                     serverSocket.close();
                     serverSocket = null;
                 }
+                executor.shutdown();
             } catch (IOException e) {
                 System.out.println(e.getMessage());
             }
@@ -144,6 +148,7 @@ public class TcpServer {
 
     public TcpServer(int port) {
         this.port = port;
+        executor = Executors.newFixedThreadPool(10);
     }
 
     public static void main(String[] args) throws IOException {
