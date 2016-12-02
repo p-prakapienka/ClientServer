@@ -1,5 +1,8 @@
 package by.prakapienka.clientserver;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -12,6 +15,8 @@ import java.util.Date;
 
 public class TcpServer {
 
+    private static final Logger LOG = LoggerFactory.getLogger(TcpServer.class);
+
     private static final String HANDSHAKE = "handshake";
     private static final String EXIT_COMMAND = "Exit";
     private static final String AVAILABLE_COMMANDS = "1. Say Hello. 2. Server Date. 3. My Address. 0. Exit.";
@@ -19,7 +24,7 @@ public class TcpServer {
     private final int port;
     private ServerSocket serverSocket;
 
-    private static class Handler extends Thread {
+    private class Handler extends Thread {
 
         private Socket socket;
         private PrintWriter out;
@@ -37,13 +42,16 @@ public class TcpServer {
                 out.println(AVAILABLE_COMMANDS);
                 while (true) {
                     request = in.readLine();
+                    LOG.info("Processing request for {}.", socket.getRemoteSocketAddress());
                     response = processRequest(request);
                     out.println(response);
-                    if (response.equalsIgnoreCase(EXIT_COMMAND))
+                    if (response.equalsIgnoreCase(EXIT_COMMAND)) {
+                        LOG.info("Client disconnected {}.", socket.getRemoteSocketAddress());
                         break;
+                    }
                 }
             } catch (IOException e) {
-                System.out.println("Exception caught when trying to listen to remote connection "
+                LOG.error("Exception caught when trying to listen to remote connection "
                         + socket.getRemoteSocketAddress() + ".");
                 System.out.println(e.getMessage());
             } finally {
@@ -72,6 +80,7 @@ public class TcpServer {
             if (!response.equals(HANDSHAKE)) {
                 throw new IOException("Failed to establish connection.");
             }
+            LOG.info("Successfully connected to {}.", socket.getRemoteSocketAddress());
         }
 
         private String processRequest(String request) {
@@ -106,15 +115,19 @@ public class TcpServer {
     public void run() {
         try {
             serverSocket = new ServerSocket(port);
+            LOG.info("Server started. Listening on port: {}", this.port);
+
             while (true) {
                 Socket socket = serverSocket.accept();
                 if (socket != null) {
                     new Handler(socket).start();
+                    LOG.info("Establishing connection with {}.",
+                            socket.getRemoteSocketAddress());
                     continue;
                 }
             }
         } catch (IOException e) {
-            System.out.println("Exception caught when trying to listen on port "
+            LOG.error("Exception caught when trying to listen on port "
                     + port + " or listening for a connection.");
             System.out.println(e.getMessage());
         } finally {
