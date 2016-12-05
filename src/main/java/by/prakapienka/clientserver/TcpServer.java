@@ -54,6 +54,7 @@ public class TcpServer extends Thread {
                         break;
                     }
                 }
+                out.println(EXIT_COMMAND);
             } catch (IOException e) {
                 LOG.error("Exception caught when trying to listen to remote connection "
                         + socket.getRemoteSocketAddress() + ".");
@@ -119,11 +120,11 @@ public class TcpServer extends Thread {
     public void run() {
         try {
             serverSocket = new ServerSocket(port);
-            new ServerConsole().start();
+            new ServerConsole(port).start();
             isRunning = true;
             LOG.info("Server started. Listening on port: {}", this.port);
 
-            while (true) {
+            while (isRunning) {
                 Socket socket = serverSocket.accept();
                 if (socket != null) {
                     executor.execute(new Handler(socket));
@@ -164,19 +165,28 @@ public class TcpServer extends Thread {
         int portNumber = Integer.parseInt(args[0]);
 
         TcpServer server = new TcpServer(portNumber);
-        server.run();
+        server.start();
     }
 
     private static class ServerConsole extends Thread {
+
+        private int port;
+
+        public ServerConsole(int port) {
+            this.port = port;
+        }
 
         @Override
         public void run() {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(System.in))) {
                 LOG.info("Server console is running.");
+                Socket socket;
                 while (isRunning) {
                     String command = in.readLine();
                     if (command.equalsIgnoreCase(EXIT_COMMAND)) {
                         isRunning = false;
+                        socket = new Socket("localhost", port);
+                        socket.close();
                     }
                 }
             } catch (IOException e) {
