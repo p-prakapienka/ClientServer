@@ -15,7 +15,7 @@ import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class TcpServer {
+public class TcpServer extends Thread {
 
     private static final Logger LOG = LoggerFactory.getLogger(TcpServer.class);
 
@@ -26,6 +26,7 @@ public class TcpServer {
     private final int port;
     private final ExecutorService executor;
     private ServerSocket serverSocket;
+    private static boolean isRunning;
 
     private class Handler implements Runnable {
 
@@ -43,7 +44,7 @@ public class TcpServer {
 
                 serverHandshake();
                 out.println(AVAILABLE_COMMANDS);
-                while (true) {
+                while (isRunning) {
                     request = in.readLine();
                     LOG.info("Processing request for {}.", socket.getRemoteSocketAddress());
                     response = processRequest(request);
@@ -118,6 +119,8 @@ public class TcpServer {
     public void run() {
         try {
             serverSocket = new ServerSocket(port);
+            new ServerConsole().start();
+            isRunning = true;
             LOG.info("Server started. Listening on port: {}", this.port);
 
             while (true) {
@@ -162,6 +165,25 @@ public class TcpServer {
 
         TcpServer server = new TcpServer(portNumber);
         server.run();
+    }
 
+    private static class ServerConsole extends Thread {
+
+        @Override
+        public void run() {
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(System.in))) {
+                LOG.info("Server console is running.");
+                while (isRunning) {
+                    String command = in.readLine();
+                    if (command.equalsIgnoreCase(EXIT_COMMAND)) {
+                        isRunning = false;
+                    }
+                }
+            } catch (IOException e) {
+                LOG.error("Failed to start server console.");
+                System.err.print(e.getMessage());
+            }
+
+        }
     }
 }
